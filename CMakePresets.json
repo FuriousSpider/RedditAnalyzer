@@ -1,0 +1,118 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 25,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "debug",
+            "displayName": "Debug",
+            "description": "Debug build with GCC",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_C_COMPILER": "gcc",
+                "REDDITANALYZER_ENABLE_TESTS": "ON",
+                "REDDITANALYZER_ENABLE_SANITIZERS": "OFF",
+                "REDDITANALYZER_ENABLE_CLANG_TIDY": "OFF"
+            }
+        },
+        {
+            "name": "debug-clang",
+            "displayName": "Debug Clang",
+            "description": "Debug build with Clang",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/debug-clang",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_C_COMPILER": "clang",
+                "REDDITANALYZER_ENABLE_TESTS": "ON",
+                "REDDITANALYZER_ENABLE_SANITIZERS": "OFF",
+                "REDDITANALYZER_ENABLE_CLANG_TIDY": "OFF"
+            }
+        },
+        {
+            "name": "debug-sanitize",
+            "displayName": "Debug + Sanitizers",
+            "description": "Debug build with GCC and sanitizers",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/debug-sanitize",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_C_COMPILER": "gcc",
+                "REDDITANALYZER_ENABLE_TESTS": "ON",
+                "REDDITANALYZER_ENABLE_SANITIZERS": "ON",
+                "REDDITANALYZER_ENABLE_CLANG_TIDY": "OFF"
+            }
+        },
+        {
+            "name": "debug-clang-tidy",
+            "displayName": "Debug + clang-tidy",
+            "description": "Debug build with Clang and clang-tidy",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/debug-clang-tidy",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_C_COMPILER": "clang",
+                "REDDITANALYZER_ENABLE_TESTS": "ON",
+                "REDDITANALYZER_ENABLE_SANITIZERS": "OFF",
+                "REDDITANALYZER_ENABLE_CLANG_TIDY": "ON"
+            }
+        },
+        {
+            "name": "release",
+            "displayName": "Release",
+            "description": "Production build with GCC",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_C_COMPILER": "gcc",
+                "REDDITANALYZER_ENABLE_TESTS": "ON",
+                "REDDITANALYZER_ENABLE_SANITIZERS": "OFF",
+                "REDDITANALYZER_ENABLE_CLANG_TIDY": "OFF"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "debug",
+            "configurePreset": "debug"
+        },
+        {
+            "name": "debug-clang",
+            "configurePreset": "debug-clang"
+        },
+        {
+            "name": "debug-sanitize",
+            "configurePreset": "debug-sanitize"
+        },
+        {
+            "name": "debug-clang-tidy",
+            "configurePreset": "debug-clang-tidy"
+        },
+        {
+            "name": "release",
+            "configurePreset": "release"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "debug",
+            "configurePreset": "debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "debug-sanitize",
+            "configurePreset": "debug-sanitize",
+            "output": {
+                "outputOnFailure": true
+            }
+        }
+    ]
+}

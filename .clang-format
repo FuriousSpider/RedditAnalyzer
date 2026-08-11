@@ -1,0 +1,27 @@
+BasedOnStyle: LLVM
+
+Language: C
+
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+ColumnLimit: 100
+
+BreakBeforeBraces: Allman
+
+PointerAlignment: Right
+
+SpaceBeforeParens: ControlStatements
+
+AllowShortFunctionsOnASingleLine: Empty
+
+IncludeBlocks: Regroup
+
+SortIncludes: CaseSensitive
+
+DerivePointerAlignment: false
+
+AlignConsecutiveDeclarations: false
+AlignConsecutiveAssignments: false
+AlignConsecutiveBitFields: false

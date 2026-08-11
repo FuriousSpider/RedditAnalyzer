@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-gcc:
+    name: Build with GCC
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake \
+            ninja-build \
+            gcc \
+            g++
+
+      - name: Configure
+        run: cmake --preset debug
+
+      - name: Build
+        run: cmake --build --preset debug
+
+      - name: Test
+        run: ctest --test-dir build/debug --output-on-failure
+
+  build-clang:
+    name: Build with Clang
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake \
+            ninja-build \
+            clang
+        
+      - name: Configure
+        run: cmake --preset debug-clang
+
+      - name: Build
+        run: cmake --build --preset debug-clang
+
+      - name: Test
+        run: ctest --test-dir build/debug-clang --output-on-failure
+
+  sanitizers:
+    name: AddressSanitizer + UBSan
+    rund-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake \
+            ninja-build \
+            gcc
+
+      - name: Configure
+        run: cmake --preset debug-sanitizer
+
+      - name: Build
+        run: cmake --build --preset debug-sanitize
+
+      - name: Test
+        run: ctest --test-dir build/debug-sanitize --output-on-failure

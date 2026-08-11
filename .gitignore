@@ -1,0 +1,40 @@
+# Build directories
+build/
+cmake-build-*/
+out/
+
+# CMake
+CMakeCache.txt
+CmakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+Makefile
+install_manifest.txt
+
+# Compilation database
+compile_commands.json
+
+# IDEs
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+*.gcda
+*.gcno
+*.gcov
+
+# Debugging
+*.dSYM/
+
+# Runtime files
+*.log
+
+# Local database
+*.db
+*.sqlite
+*.sqlite3
