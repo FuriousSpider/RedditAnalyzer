@@ -1,0 +1,26 @@
+#ifndef REDDITANALYZER_UTILS_ERROR_H
+#define REDDITANALYZER_UTILS_ERROR_H
+
+typedef enum
+{
+    RA_OK = 0,
+
+    RA_ERR_INVALID_ARGUMENT,
+    RA_ERR_OUT_OF_MEMORY,
+
+    RA_ERR_NETWORK,
+    RA_ERR_TIMEOUT,
+    RA_ERR_HTTP,
+    RA_ERR_RATE_LIMIT,
+
+    RA_ERR_JSON,
+    RA_ERR_NOT_FOUND,
+
+    RA_ERR_DATABASE,
+
+    RA_ERR_INTERNAL
+} RaError;
+
+const char *ra_error_string(RaError error);
+
+#endif  /* REDDITANALYZER_UTILS_ERROR_H */

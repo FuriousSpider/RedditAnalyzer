@@ -126,7 +126,12 @@ target_include_directories(
 # -------------------------------------------------------------------------
 
 add_library(redditanalyzer_core STATIC
+    src/model/post.c
+    src/model/post_list.c
+    src/model/subreddit.c
+    src/utils/error.c
     src/utils/logger.c
+    src/utils/string.c
 )
 
 target_link_libraries(
