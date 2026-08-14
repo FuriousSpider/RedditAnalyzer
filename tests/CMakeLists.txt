@@ -21,6 +21,7 @@ add_test(
 )
 
 
+
 add_executable(
     redditanalyzer_subreddit_tests
     unit/test_subreddit.c
@@ -41,4 +42,28 @@ target_compile_features(
 add_test(
     NAME redditanalyzer_subreddit
     COMMAND redditanalyzer_subreddit_tests
+)
+
+
+
+add_executable(
+    redditanalyzer_post_tests
+    unit/test_post.c
+)
+
+target_link_libraries(
+    redditanalyzer_post_tests
+    PRIVATE
+        redditanalyzer_core
+)
+
+target_compile_features(
+    redditanalyzer_post_tests
+    PRIVATE
+        c_std_17
+)
+
+add_test(
+    NAME redditanalyzer_post
+    COMMAND redditanalyzer_post_tests
 )
