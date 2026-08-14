@@ -67,3 +67,27 @@ add_test(
     NAME redditanalyzer_post
     COMMAND redditanalyzer_post_tests
 )
+
+
+
+add_executable(
+    redditanalyzer_post_list_tests
+    unit/test_post_list.c
+)
+
+target_link_libraries(
+    redditanalyzer_post_list_tests
+    PRIVATE
+        redditanalyzer_core
+)
+
+target_compile_features(
+    redditanalyzer_post_list_tests
+    PRIVATE
+        c_std_17
+)
+
+add_test(
+    NAME redditanalyzer_post_list
+    COMMAND redditanalyzer_post_list_tests
+)
