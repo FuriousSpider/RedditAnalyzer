@@ -136,7 +136,6 @@ add_library(redditanalyzer_core STATIC
     src/model/post.c
     src/model/post_list.c
     src/model/subreddit.c
-    src/reddit/client.c
     src/utils/error.c
     src/utils/logger.c
     src/utils/string.c
@@ -177,6 +176,27 @@ target_compile_features(
         c_std_17
 )
 
+
+# -------------------------------------------------------------------------
+# Reddit library
+# -------------------------------------------------------------------------
+
+add_library(redditanalyzer_reddit STATIC
+    src/reddit/client.c
+)
+
+target_link_libraries(
+    redditanalyzer_reddit
+    PUBLIC
+        redditanalyzer_core
+        redditanalyzer_http
+)
+
+target_compile_features(
+    redditanalyzer_reddit
+    PUBLIC
+        c_std_17
+)
 
 # -------------------------------------------------------------------------
 # Main executable

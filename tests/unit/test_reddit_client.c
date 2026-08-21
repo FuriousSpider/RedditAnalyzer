@@ -5,7 +5,11 @@
 
 static void test_create_destroy(void)
 {
-    RedditClient *client = reddit_client_create();
+    RedditClientConfig config = {
+        .base_url = "http://127.0.0.1"
+    };
+
+    RedditClient *client = reddit_client_create(&config);
 
     assert(client != NULL);
 
@@ -14,13 +18,21 @@ static void test_create_destroy(void)
 
 static void test_invalid_arguments(void)
 {
+    assert(reddit_client_create(NULL) == NULL);
+
     assert(reddit_client_get_subreddit(NULL, "programming") == RA_ERR_INVALID_ARGUMENT);
 
-    RedditClient *client = reddit_client_create();
+    RedditClientConfig config = {
+        .base_url = "http://127.0.0.1"
+    };
+
+    RedditClient *client = reddit_client_create(&config);
 
     assert(client != NULL);
 
     assert(reddit_client_get_subreddit(client, NULL) == RA_ERR_INVALID_ARGUMENT);
+
+    assert(reddit_client_get_subreddit(client, "") == RA_ERR_INVALID_ARGUMENT);
 
     reddit_client_destroy(client);
 }

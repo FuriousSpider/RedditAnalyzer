@@ -5,8 +5,12 @@
 
 typedef struct RedditClient RedditClient;
 
+typedef struct
+{
+    const char *base_url;
+} RedditClientConfig;
 
-RedditClient *reddit_client_create(void);
+RedditClient *reddit_client_create(const RedditClientConfig *config);
 
 void reddit_client_destroy(RedditClient *client);
 
