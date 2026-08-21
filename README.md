@@ -70,10 +70,10 @@ For the Clang build:
 
 ## Tests
 Run the test suite with:
-ctest --test-dir build/debug --output-on-failure
+ctest --preset debug
 
 For the Clang build:
-ctest --test-dir build/debug-clang --output-on-failure
+ctest --preset debug-clang
 
 
 ## Sanitizers

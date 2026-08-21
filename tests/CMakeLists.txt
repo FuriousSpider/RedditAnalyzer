@@ -1,93 +1,46 @@
-add_executable(
-    redditanalyzer_tests
+function(add_redditanalyzer_test test_name source_file)
+    set(test_target "redditanalyzer_${test_name}_tests")
+
+    add_executable(
+        ${test_target}
+        ${source_file}
+    )
+
+    target_link_libraries(
+        ${test_target}
+        PRIVATE
+            redditanalyzer_core
+    )
+
+    target_compile_features(
+        ${test_target}
+        PRIVATE
+            c_std_17
+    )
+
+    add_test(
+        NAME "redditanalyzer_${test_name}"
+        COMMAND ${test_target}
+    )
+endfunction()
+
+
+add_redditanalyzer_test(
+    smoke
     unit/test_smoke.c
 )
 
-target_link_libraries(
-    redditanalyzer_tests
-    PRIVATE
-        redditanalyzer_core
-)
-
-target_compile_features(
-    redditanalyzer_tests
-    PRIVATE
-        c_std_17
-)
-
-add_test(
-    NAME redditanalyzer_smoke
-    COMMAND redditanalyzer_tests
-)
-
-
-
-add_executable(
-    redditanalyzer_subreddit_tests
+add_redditanalyzer_test(
+    subreddit
     unit/test_subreddit.c
 )
 
-target_link_libraries(
-    redditanalyzer_subreddit_tests
-    PRIVATE
-        redditanalyzer_core
-)
-
-target_compile_features(
-    redditanalyzer_subreddit_tests
-    PRIVATE
-        c_std_17
-)
-
-add_test(
-    NAME redditanalyzer_subreddit
-    COMMAND redditanalyzer_subreddit_tests
-)
-
-
-
-add_executable(
-    redditanalyzer_post_tests
+add_redditanalyzer_test(
+    post
     unit/test_post.c
 )
 
-target_link_libraries(
-    redditanalyzer_post_tests
-    PRIVATE
-        redditanalyzer_core
-)
-
-target_compile_features(
-    redditanalyzer_post_tests
-    PRIVATE
-        c_std_17
-)
-
-add_test(
-    NAME redditanalyzer_post
-    COMMAND redditanalyzer_post_tests
-)
-
-
-
-add_executable(
-    redditanalyzer_post_list_tests
+add_redditanalyzer_test(
+    post_list
     unit/test_post_list.c
-)
-
-target_link_libraries(
-    redditanalyzer_post_list_tests
-    PRIVATE
-        redditanalyzer_core
-)
-
-target_compile_features(
-    redditanalyzer_post_list_tests
-    PRIVATE
-        c_std_17
-)
-
-add_test(
-    NAME redditanalyzer_post_list
-    COMMAND redditanalyzer_post_list_tests
 )
