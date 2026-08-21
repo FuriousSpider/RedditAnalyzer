@@ -48,38 +48,38 @@ Planned:
 ## Build
 
 ### GCC Debug
-cmake --preset debug
+cmake --preset debug  
 cmake --build --preset debug
 
 ### Clang Debug
-cmake --preset debug-clang
+cmake --preset debug-clang  
 cmake --build --preset debug-clang
 
 ### Release
-cmake --preset release
+cmake --preset release  
 cmake --build --preset release
 
 
 ## Run
-After building the project run:
-./build/debug/bin/redditanalyzer
-
-For the Clang build:
+After building the project run:  
+./build/debug/bin/redditanalyzer  
+  
+For the Clang build:  
 ./build/debug-clang/bin/redditanalyzer
 
 
 ## Tests
-Run the test suite with:
-ctest --preset debug
-
-For the Clang build:
+Run the test suite with:  
+ctest --preset debug  
+  
+For the Clang build:  
 ctest --preset debug-clang
 
 
 ## Sanitizers
-Build the project with AddressSanitizer and UndefinedBehaviorSanitizer:
-cmake --preset debug-sanitize
-cmake --build --preset debug-sanitize
-
-Run the tests:
-ctest --test-dir build/debug-sanitize --output-on-failure
+Build the project with AddressSanitizer and UndefinedBehaviorSanitizer:  
+cmake --preset debug-sanitize  
+cmake --build --preset debug-sanitize  
+  
+Run the tests:  
+ctest --preset debug-sanitize --output-on-failure
