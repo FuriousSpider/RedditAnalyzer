@@ -80,6 +80,29 @@ static void test_destroy_null(void)
     post_list_destroy(NULL);
 }
 
+static void test_grow(void)
+{
+    PostList list;
+
+    assert(post_list_init(&list) == RA_OK);
+
+    const size_t initial_capacity = list.capacity;
+    const size_t post_count = initial_capacity + 1U;
+
+    for (size_t i = 0U; i < post_count; i++)
+    {
+        Post *post = post_create();
+
+        assert(post != NULL);
+        assert(post_list_append(&list, post) == RA_OK);
+    }
+
+    assert(list.count == post_count);
+    assert(list.capacity > initial_capacity);
+
+    post_list_destroy(&list);
+}
+
 int main(void)
 {
     test_init();
@@ -87,6 +110,7 @@ int main(void)
     test_multiple_posts();
     test_append_invalid_arguments();
     test_destroy_null();
+    test_grow();
 
     return 0;
 }
