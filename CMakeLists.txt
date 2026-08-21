@@ -122,6 +122,13 @@ target_include_directories(
 
 
 # -------------------------------------------------------------------------
+# Curl
+# -------------------------------------------------------------------------
+
+find_package(CURL REQUIRED)
+
+
+# -------------------------------------------------------------------------
 # Core library
 # -------------------------------------------------------------------------
 
@@ -148,6 +155,29 @@ target_compile_features(
 
 
 # -------------------------------------------------------------------------
+# Http library
+# -------------------------------------------------------------------------
+
+add_library(redditanalyzer_http STATIC
+    src/http/client.c
+)
+
+target_link_libraries(
+    redditanalyzer_http
+    PUBLIC
+        redditanalyzer_options
+        redditanalyzer_core
+        CURL::libcurl
+)
+
+target_compile_features(
+    redditanalyzer_http
+    PUBLIC
+        c_std_17
+)
+
+
+# -------------------------------------------------------------------------
 # Main executable
 # -------------------------------------------------------------------------
 
@@ -159,6 +189,7 @@ target_link_libraries(
     redditanalyzer
     PRIVATE
         redditanalyzer_core
+        redditanalyzer_http
 )
 
 target_compile_features(
