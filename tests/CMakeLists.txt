@@ -30,6 +30,13 @@ function(add_redditanalyzer_http_test test_name source_file)
     add_executable(
         ${test_target}
         ${source_file}
+        support/http_test_server.c
+    )
+
+    target_include_directories(
+        ${test_target}
+        PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/support"
     )
 
     target_link_libraries(
