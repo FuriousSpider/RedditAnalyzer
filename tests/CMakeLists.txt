@@ -78,6 +78,11 @@ add_redditanalyzer_test(
     unit/test_post_list.c
 )
 
+add_redditanalyzer_test(
+    reddit_client
+    unit/test_reddit_client.c
+)
+
 add_redditanalyzer_http_test(
     http
     unit/test_http.c

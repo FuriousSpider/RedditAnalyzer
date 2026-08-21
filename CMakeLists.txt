@@ -136,6 +136,7 @@ add_library(redditanalyzer_core STATIC
     src/model/post.c
     src/model/post_list.c
     src/model/subreddit.c
+    src/reddit/client.c
     src/utils/error.c
     src/utils/logger.c
     src/utils/string.c
