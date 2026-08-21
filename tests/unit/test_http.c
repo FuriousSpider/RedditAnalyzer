@@ -69,7 +69,6 @@ static void test_http_get_ok(void)
 {
     HttpTestServer server = {
         .server_fd = -1,
-        .client_fd = -1,
         .port = 0,
         .server_pid = 0
     };
@@ -92,9 +91,15 @@ static void test_http_get_ok(void)
 
     HttpResponse response = {0};
 
-    RaError error = http_get(url, &response);
+    // RaError error = http_get(url, &response);
 
+    // assert(error == RA_OK);
+
+    RaError error = http_get(url, &response);
+    fprintf(stderr, "http_get() returned: %d (%s), HTTP status: %ld\n", error, ra_error_string(error), response.status_code);
     assert(error == RA_OK);
+
+
     assert(response.status_code == 200L);
     assert(response.data != NULL);
     assert(strcmp(response.data, "{\"status\":\"ok\"}") == 0);
@@ -107,7 +112,6 @@ static void test_http_get_not_found(void)
 {
     HttpTestServer server = {
         .server_fd = -1,
-        .client_fd = -1,
         .port = 0,
         .server_pid = 0
     };
@@ -145,7 +149,6 @@ static void test_http_get_rate_limit(void)
 {
     HttpTestServer server = {
         .server_fd = -1,
-        .client_fd = -1,
         .port = 0,
         .server_pid = 0
     };
@@ -183,7 +186,6 @@ static void test_http_get_server_error(void)
 {
     HttpTestServer server = {
         .server_fd = -1,
-        .client_fd = -1,
         .port = 0,
         .server_pid = 0
     };

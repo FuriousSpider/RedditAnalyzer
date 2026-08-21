@@ -13,6 +13,9 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#define HTTP_TEST_REQUEST_BUFFER_SIZE 4096U
+#define HTTP_TEST_RESPONSE_BUFFER_SIZE 4096U
+
 bool http_test_server_start(HttpTestServer *server)
 {
     if (server == NULL)
@@ -21,7 +24,6 @@ bool http_test_server_start(HttpTestServer *server)
     }
 
     server->server_fd = -1;
-    server->client_fd = -1;
     server->port = 0;
     server->server_pid = 0;
 
@@ -99,10 +101,16 @@ bool http_test_server_run(
         return false;
     }
 
+    if (server->server_fd < 0)
+    {
+        return false;
+    }
+
     pid_t pid = fork();
 
     if (pid < 0)
     {
+        perror("fork");
         return false;
     }
 
@@ -116,8 +124,23 @@ bool http_test_server_run(
 
         if (client_fd < 0)
         {
+            perror("accept");
             _exit(EXIT_FAILURE);
         }
+
+        char request[HTTP_TEST_REQUEST_BUFFER_SIZE];
+
+        ssize_t received = recv(client_fd, request, sizeof(request) -1U, 0);
+
+        if (received <= 0)
+        {
+            perror("recv");
+            close(client_fd);
+            close(server->server_fd);
+            _exit(EXIT_FAILURE);
+        }
+
+        request[received] = '\0';
 
         const char *status_text = "Internal Server Error";
 
@@ -134,7 +157,7 @@ bool http_test_server_run(
             status_text = "Too Many Requests";
         }
 
-        char response[4096];
+        char response[HTTP_TEST_RESPONSE_BUFFER_SIZE];
 
         int response_length = snprintf(
             response,
@@ -154,22 +177,40 @@ bool http_test_server_run(
         if (response_length < 0 || (size_t)response_length >= sizeof(response))
         {
             close(client_fd);
+            close(server->server_fd);
             _exit(EXIT_FAILURE);
         }
 
-        const ssize_t sent = send(
-            client_fd,
-            response,
-            (size_t)response_length,
-            0
-        );
+        size_t total_sent = 0U;
+
+        while (total_sent < (size_t)response_length)
+        {
+            ssize_t sent = send(client_fd, response + total_sent, (size_t)response_length - total_sent, 0);
+            if (sent <= 0)
+            {
+                perror("send");
+                close(client_fd);
+                close(server->server_fd);
+                _exit(EXIT_FAILURE);
+            }
+
+            total_sent += (size_t)sent;
+        }
+
+        // const ssize_t sent = send(
+        //     client_fd,
+        //     response,
+        //     (size_t)response_length,
+        //     0
+        // );
 
         close(client_fd);
+        close(server->server_fd);
 
-        if (sent != (ssize_t)response_length)
-        {
-            _exit(EXIT_FAILURE);
-        }
+        // if (sent != (ssize_t)response_length)
+        // {
+        //     _exit(EXIT_FAILURE);
+        // }
 
         _exit(EXIT_SUCCESS);
     }
@@ -199,11 +240,6 @@ void http_test_server_stop(HttpTestServer *server)
         server->server_pid = 0;
     }
 
-    if (server->client_fd >= 0)
-    {
-        close(server->client_fd);
-        server->client_fd = -1;
-    }
 
     if (server->server_fd >= 0)
     {

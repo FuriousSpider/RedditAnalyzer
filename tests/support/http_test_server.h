@@ -7,7 +7,6 @@
 typedef struct
 {
     int server_fd;
-    int client_fd;
     int port;
     pid_t server_pid;
 } HttpTestServer;
