@@ -59,6 +59,46 @@ static size_t write_callback(
     return bytes;
 }
 
+static RaError http_status_to_error(long status_code)
+{
+    if (status_code >= 200L && status_code < 300L)
+    {
+        return RA_OK;
+    }
+
+    if (status_code == 404L)
+    {
+        return RA_ERR_NOT_FOUND;
+    }
+
+    if (status_code == 429L)
+    {
+        return RA_ERR_RATE_LIMIT;
+    }
+
+    if (status_code >= 400L)
+    {
+        return RA_ERR_HTTP;
+    }
+
+    return RA_ERR_HTTP;
+}
+
+static RaError curl_result_to_error(CURLcode result)
+{
+    if (result == CURLE_OK)
+    {
+        return RA_OK;
+    }
+
+    if (result == CURLE_OPERATION_TIMEDOUT)
+    {
+        return RA_ERR_TIMEOUT;
+    }
+
+    return RA_ERR_NETWORK;
+}
+
 RaError http_get(
     const char *url,
     HttpResponse *response
@@ -179,12 +219,7 @@ RaError http_get(
         free(buffer.data);
         curl_easy_cleanup(curl);
 
-        if (result == CURLE_OPERATION_TIMEDOUT)
-        {
-            return RA_ERR_TIMEOUT;
-        }
-
-        return RA_ERR_NETWORK;
+        return curl_result_to_error(result);
     }
 
     long status_code = 0L;
@@ -207,22 +242,7 @@ RaError http_get(
     response->size = buffer.size;
     response->status_code = status_code;
 
-    if (status_code == 404L)
-    {
-        return RA_ERR_NOT_FOUND;
-    }
-
-    if (status_code == 429L)
-    {
-        return RA_ERR_RATE_LIMIT;
-    }
-
-    if (status_code >= 400L)
-    {
-        return RA_ERR_HTTP;
-    }
-
-    return RA_OK;
+    return http_status_to_error(status_code);
 }
 
 void http_response_destroy(HttpResponse *response)
