@@ -75,3 +75,10 @@ add_redditanalyzer_http_test(
     http
     unit/test_http.c
 )
+
+set_tests_properties(
+    redditanalyzer_http
+    PROPERTIES
+        ENVIRONMENT
+            "LSAN_OPTIONS=suppressions=${PROJECT_SOURCE_DIR}/sanitizers/lsan.supp"
+)
