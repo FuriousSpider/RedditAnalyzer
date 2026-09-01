@@ -7,6 +7,9 @@ project(
     LANGUAGES C
 )
 
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(CJSON REQUIRED libcjson)
+
 
 # -------------------------------------------------------------------------
 # Project configuration
@@ -119,6 +122,33 @@ target_include_directories(
     INTERFACE
         "${PROJECT_SOURCE_DIR}/include"
 )
+
+add_library(
+    redditanalyzer_json
+    STATIC
+        src/json/subreddit_parser.c
+)
+
+target_link_libraries(
+    redditanalyzer_json
+    PUBLIC
+        redditanalyzer_core
+        ${CJSON_LIBRARIES}
+)
+
+target_include_directories(
+    redditanalyzer_json
+    PUBLIC
+        "${PROJECT_SOURCE_DIR}/include"
+        ${CJSON_INCLUDE_DIRS}
+)
+
+target_compile_features(
+    redditanalyzer_json
+    PUBLIC
+        c_std_17
+)
+
 
 
 # -------------------------------------------------------------------------
