@@ -157,6 +157,11 @@ add_redditanalyzer_json_test(
     unit/test_post_parser.c
 )
 
+add_redditanalyzer_json_test(
+    post_list_parser
+    unit/test_post_list_parser.c
+)
+
 set_tests_properties(
     redditanalyzer_http
     redditanalyzer_reddit_client

@@ -128,6 +128,7 @@ add_library(
     STATIC
         src/json/subreddit_parser.c
         src/json/post_parser.c
+        src/json/post_list_parser.c
 )
 
 target_link_libraries(
