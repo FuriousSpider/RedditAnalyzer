@@ -127,6 +127,7 @@ add_library(
     redditanalyzer_json
     STATIC
         src/json/subreddit_parser.c
+        src/json/post_parser.c
 )
 
 target_link_libraries(
