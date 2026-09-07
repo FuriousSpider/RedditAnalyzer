@@ -4,6 +4,8 @@
 
 #include "redditanalyzer/utils/string.h"
 
+#include "redditanalyzer/json/subreddit_parser.h"
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,6 +34,7 @@ RedditClient *reddit_client_create(const RedditClientConfig *config)
 
     if (client->base_url == NULL)
     {
+        free(client);
         return NULL;
     }
 
@@ -48,12 +51,14 @@ void reddit_client_destroy(RedditClient *client)
     free(client);
 }
 
-RaError reddit_client_get_subreddit(RedditClient *client, const char *name)
+RaError reddit_client_get_subreddit(RedditClient *client, const char *name, Subreddit **subreddit)
 {
-    if (client == NULL || name == NULL)
+    if (client == NULL || name == NULL || subreddit == NULL)
     {
         return RA_ERR_INVALID_ARGUMENT;
     }
+
+    *subreddit = NULL;
 
     size_t base_length = strlen(client->base_url);
     size_t name_length = strlen(name);
@@ -98,6 +103,15 @@ RaError reddit_client_get_subreddit(RedditClient *client, const char *name)
     RaError error = http_get(url, &response);
 
     free(url);
+
+    if (error != RA_OK)
+    {
+        http_response_destroy(&response);
+        return error;
+    }
+
+    error = subreddit_from_json(response.data, subreddit);
+
     http_response_destroy(&response);
 
     return error;

@@ -116,6 +116,8 @@ bool http_test_server_run(
 
     if (pid == 0)
     {
+        fprintf(stderr, "HTTP SERVER: waiting for connection...\n");
+
         int client_fd = accept(
             server->server_fd,
             NULL,
@@ -127,6 +129,8 @@ bool http_test_server_run(
             perror("accept");
             _exit(EXIT_FAILURE);
         }
+
+        fprintf(stderr, "HTTP SERVER: client connected\n");
 
         char request[HTTP_TEST_REQUEST_BUFFER_SIZE];
 
@@ -141,6 +145,8 @@ bool http_test_server_run(
         }
 
         request[received] = '\0';
+
+        fprintf(stderr, "HTTP SERVER: received request:\n%s\n", request);
 
         const char *status_text = "Internal Server Error";
 
@@ -180,6 +186,8 @@ bool http_test_server_run(
             close(server->server_fd);
             _exit(EXIT_FAILURE);
         }
+
+        fprintf(stderr, "HTTP SERVER: sending response (%d bytes)\n", response_length);
 
         size_t total_sent = 0U;
 

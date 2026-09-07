@@ -63,6 +63,13 @@ function(add_redditanalyzer_reddit_test test_name source_file)
     add_executable(
         ${test_target}
         ${source_file}
+        support/http_test_server.c
+    )
+
+    target_include_directories(
+        ${test_target}
+        PRIVATE
+            "${PROJECT_SOURCE_DIR}/tests"   
     )
 
     target_link_libraries(

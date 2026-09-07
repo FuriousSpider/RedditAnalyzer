@@ -220,6 +220,7 @@ target_link_libraries(
     PUBLIC
         redditanalyzer_core
         redditanalyzer_http
+        redditanalyzer_json
 )
 
 target_compile_features(
