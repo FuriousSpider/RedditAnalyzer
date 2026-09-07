@@ -194,6 +194,7 @@ static void test_get_posts(void)
     RaError error = reddit_client_get_posts(
         client,
         "programming",
+        2U,
         &list
     );
 
@@ -213,12 +214,96 @@ static void test_get_posts(void)
     http_test_server_stop(&server);
 }
 
+static void test_get_posts_page(void)
+{
+    HttpTestServer server = {0};
+
+    assert(http_test_server_start(&server));
+
+    char base_url[64];
+
+    int written = snprintf(
+        base_url,
+        sizeof(base_url),
+        "http://127.0.0.1:%d",
+        server.port
+    );
+
+    assert(written > 0);
+    assert((size_t)written < sizeof(base_url));
+
+    RedditClientConfig config = {
+        .base_url = base_url
+    };
+
+    RedditClient *client = reddit_client_create(&config);
+
+    assert(client != NULL);
+
+    const char *body =
+        "{"
+        "\"kind\":\"Listing\","
+        "\"data\":{"
+            "\"after\":\"t3_next\","
+            "\"children\":["
+                "{"
+                    "\"kind\":\"t3\","
+                    "\"data\":{"
+                        "\"id\":\"abc123\","
+                        "\"title\":\"Next page post\","
+                        "\"author\":\"test_user\","
+                        "\"score\":321,"
+                        "\"num_comments\":12,"
+                        "\"created_utc\":1750000000,"
+                        "\"is_video\":false,"
+                        "\"is_self\":true"
+                    "}"
+                "}"
+            "]"
+        "}"
+        "}";
+
+    assert(
+        http_test_server_run_expect_request(
+            &server,
+            200,
+            body,
+            "GET /r/programming.json?limit=2&after=t3_previous"
+        )
+    );
+
+    PostList list = {0};
+
+    RaError error = reddit_client_get_posts_page(
+        client,
+        "programming",
+        2U,
+        "t3_previous",
+        &list
+    );
+
+    assert(error == RA_OK);
+    assert(list.count == 1U);
+
+    assert(strcmp(list.items[0]->id, "abc123") == 0);
+    assert(strcmp(list.items[0]->title, "Next page post") == 0);
+    assert(list.items[0]->score == 321);
+
+    assert(list.after != NULL);
+    assert(strcmp(list.after, "t3_next") == 0);
+
+    post_list_destroy(&list);
+    reddit_client_destroy(client);
+    http_test_server_stop(&server);
+}
+
 int main(void)
 {
     test_create_destroy();
     test_invalid_arguments();
     test_get_subreddit();
     test_get_posts();
+    test_get_posts_page();
 
     return 0;
 }

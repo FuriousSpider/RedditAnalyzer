@@ -9,6 +9,7 @@ static void test_valid_json(void)
         "{"
         "\"kind\":\"Listing\","
         "\"data\":{"
+            "\"after\":\"t3_next123\","
             "\"children\":["
                 "{"
                     "\"kind\":\"t3\","
@@ -46,6 +47,7 @@ static void test_valid_json(void)
 
     assert(error == RA_OK);
     assert(list.count == 2U);
+    assert(strcmp(list.after, "t3_next123") == 0);
 
     assert(strcmp(list.items[0]->id, "abc123") == 0);
     assert(strcmp(list.items[0]->title, "First post") == 0);
@@ -127,6 +129,7 @@ static void test_empty_children(void)
     );
 
     assert(list.count == 0U);
+    assert(list.after == NULL);
 
     post_list_destroy(&list);
 }

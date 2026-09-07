@@ -1,9 +1,11 @@
 #include "redditanalyzer/json/post_list_parser.h"
 
 #include "redditanalyzer/json/post_parser.h"
+#include "redditanalyzer/utils/string.h"
 
 #include <cjson/cJSON.h>
 #include <stdlib.h>
+#include <string.h>
 
 RaError post_list_from_json(
     const char *json,
@@ -113,6 +115,20 @@ RaError post_list_from_json(
             cJSON_Delete(root);
             post_list_destroy(post_list);
             return error;
+        }
+    }
+
+    const cJSON *after = cJSON_GetObjectItemCaseSensitive(data, "after");
+    
+    if (cJSON_IsString(after) && after->valuestring != NULL)
+    {
+        post_list->after = ra_strdup(after->valuestring);
+
+        if (post_list->after == NULL)
+        {
+            cJSON_Delete(root);
+            post_list_destroy(post_list);
+            return RA_ERR_OUT_OF_MEMORY;
         }
     }
 

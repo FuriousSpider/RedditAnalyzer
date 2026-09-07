@@ -122,10 +122,11 @@ RaError reddit_client_get_subreddit(RedditClient *client, const char *name, Subr
 RaError reddit_client_get_posts(
     RedditClient *client,
     const char *name,
+    size_t limit,
     PostList *post_list
 )
 {
-    if (client == NULL || name == NULL || post_list == NULL)
+    if (client == NULL || name == NULL || limit == 0U || post_list == NULL)
     {
         return RA_ERR_INVALID_ARGUMENT;
     }
@@ -138,7 +139,7 @@ RaError reddit_client_get_posts(
         return RA_ERR_INVALID_ARGUMENT;
     }
 
-    const size_t suffix_length = strlen("/r//.json");
+    const size_t suffix_length = strlen("/r//.json?limit=");
 
     if (base_length > SIZE_MAX - name_length || base_length + name_length > SIZE_MAX - suffix_length - 1U)
     {
@@ -149,7 +150,8 @@ RaError reddit_client_get_posts(
         base_length +
         strlen("/r/") + 
         name_length + 
-        strlen(".json") + 
+        strlen(".json?limit=") + 
+        20U + 
         1U;
 
     char *url = malloc(url_size);
@@ -162,10 +164,116 @@ RaError reddit_client_get_posts(
     int written = snprintf(
         url,
         url_size,
-        "%s/r/%s.json",
+        "%s/r/%s.json?limit=%zu",
         client->base_url,
-        name
+        name,
+        limit
     );
+
+    if (written < 0 || (size_t)written >= url_size)
+    {
+        free(url);
+        return RA_ERR_INTERNAL;
+    }
+
+    HttpResponse response = {0};
+
+    RaError error = http_get(url, &response);
+
+    free(url);
+
+    if (error != RA_OK)
+    {
+        http_response_destroy(&response);
+        return error;
+    }
+
+    error = post_list_from_json(
+        response.data,
+        post_list
+    );
+
+    http_response_destroy(&response);
+
+    return error;
+}
+
+RaError reddit_client_get_posts_page(
+    RedditClient *client,
+    const char *name,
+    size_t limit,
+    const char *after,
+    PostList *post_list
+)
+{
+    if (client == NULL || name == NULL ||  limit == 0U || post_list == NULL)
+    {
+        return RA_ERR_INVALID_ARGUMENT;
+    }
+
+    if (name[0] == '\0')
+    {
+        return RA_ERR_INVALID_ARGUMENT;
+    }
+
+    size_t base_length = strlen(client->base_url);
+    size_t name_length = strlen(name);
+
+    const char *after_parameter = "";
+
+    if (after != NULL && after[0] != '\0')
+    {
+        after_parameter = "&after=";
+    }
+
+    size_t after_length = strlen(after_parameter);
+
+    if (after != NULL)
+    {
+        after_length += strlen(after);
+    }
+
+    const size_t url_size = 
+        base_length + 
+        strlen("/r/") + 
+        name_length + 
+        strlen(".json?limit=") + 
+        20U + 
+        after_length + 
+        1U;
+
+    char *url = malloc(url_size);
+
+    if (url == NULL)
+    {
+        return RA_ERR_OUT_OF_MEMORY;
+    }
+
+    int written;
+
+    if (after != NULL && after[0] != '\0')
+    {
+        written = snprintf(
+            url,
+            url_size,
+            "%s/r/%s.json?limit=%zu&after=%s",
+            client->base_url,
+            name,
+            limit,
+            after
+        );
+    }
+    else
+    {
+        written = snprintf(
+            url,
+            url_size,
+            "%s/r/%s.json?limit=%zu",
+            client->base_url,
+            name,
+            limit
+        );
+    }
 
     if (written < 0 || (size_t)written >= url_size)
     {

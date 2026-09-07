@@ -90,10 +90,11 @@ bool http_test_server_start(HttpTestServer *server)
     return true;
 }
 
-bool http_test_server_run(
+static bool http_test_server_run_internal(
     HttpTestServer *server,
     int status_code,
-    const char *body
+    const char *body,
+    const char *expected_request
 )
 {
     if (server == NULL || body == NULL)
@@ -147,6 +148,15 @@ bool http_test_server_run(
         request[received] = '\0';
 
         fprintf(stderr, "HTTP SERVER: received request:\n%s\n", request);
+
+        if (expected_request != NULL && strstr(request, expected_request) == NULL)
+        {
+            fprintf(stderr, "HTTP SERVER: expected request fragment not found: %s\n", expected_request);
+
+            close(client_fd);
+            close(server->server_fd);
+            _exit(EXIT_FAILURE);
+        }
 
         const char *status_text = "Internal Server Error";
 
@@ -205,20 +215,8 @@ bool http_test_server_run(
             total_sent += (size_t)sent;
         }
 
-        // const ssize_t sent = send(
-        //     client_fd,
-        //     response,
-        //     (size_t)response_length,
-        //     0
-        // );
-
         close(client_fd);
         close(server->server_fd);
-
-        // if (sent != (ssize_t)response_length)
-        // {
-        //     _exit(EXIT_FAILURE);
-        // }
 
         _exit(EXIT_SUCCESS);
     }
@@ -256,4 +254,38 @@ void http_test_server_stop(HttpTestServer *server)
     }
 
     server->port = 0;
+}
+
+bool http_test_server_run(
+    HttpTestServer *server,
+    int status_code,
+    const char *body
+)
+{
+    return http_test_server_run_internal(
+        server,
+        status_code,
+        body,
+        NULL
+    );
+}
+
+bool http_test_server_run_expect_request(
+    HttpTestServer *server,
+    int status_code,
+    const char *body,
+    const char *expected_request
+)
+{
+    if (expected_request == NULL)
+    {
+        return false;
+    }
+
+    return http_test_server_run_internal(
+        server,
+        status_code,
+        body,
+        expected_request
+    );
 }

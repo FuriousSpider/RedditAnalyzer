@@ -83,7 +83,9 @@ void post_list_destroy(PostList *list)
     post_list_clear(list);
 
     free(list->items);
+    free(list->after);
 
     list->items = NULL;
+    list->after = NULL;
     list->capacity = 0U;
 }

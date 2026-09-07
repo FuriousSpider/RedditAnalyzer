@@ -5,6 +5,8 @@
 #include "redditanalyzer/model/subreddit.h"
 #include "redditanalyzer/utils/error.h"
 
+#include <stddef.h>
+
 typedef struct RedditClient RedditClient;
 
 typedef struct
@@ -25,6 +27,15 @@ RaError reddit_client_get_subreddit(
 RaError reddit_client_get_posts(
     RedditClient *client,
     const char *name,
+    size_t limit,
+    PostList *post_list
+);
+
+RaError reddit_client_get_posts_page(
+    RedditClient *client,
+    const char *name,
+    size_t limit,
+    const char *after,
     PostList *post_list
 );
 

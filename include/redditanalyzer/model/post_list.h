@@ -11,6 +11,7 @@ typedef struct
     Post **items;
     size_t count;
     size_t capacity;
+    char *after;
 } PostList;
 
 RaError post_list_init(PostList *list);
