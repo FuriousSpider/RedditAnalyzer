@@ -2,9 +2,11 @@
 
 #include "redditanalyzer/http/client.h"
 
+#include "redditanalyzer/json/post_list_parser.h"
+#include "redditanalyzer/json/subreddit_parser.h"
+
 #include "redditanalyzer/utils/string.h"
 
-#include "redditanalyzer/json/subreddit_parser.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -111,6 +113,82 @@ RaError reddit_client_get_subreddit(RedditClient *client, const char *name, Subr
     }
 
     error = subreddit_from_json(response.data, subreddit);
+
+    http_response_destroy(&response);
+
+    return error;
+}
+
+RaError reddit_client_get_posts(
+    RedditClient *client,
+    const char *name,
+    PostList *post_list
+)
+{
+    if (client == NULL || name == NULL || post_list == NULL)
+    {
+        return RA_ERR_INVALID_ARGUMENT;
+    }
+
+    size_t base_length = strlen(client->base_url);
+    size_t name_length = strlen(name);
+
+    if (name_length == 0U)
+    {
+        return RA_ERR_INVALID_ARGUMENT;
+    }
+
+    const size_t suffix_length = strlen("/r//.json");
+
+    if (base_length > SIZE_MAX - name_length || base_length + name_length > SIZE_MAX - suffix_length - 1U)
+    {
+        return RA_ERR_INTERNAL;
+    }
+
+    const size_t url_size =
+        base_length +
+        strlen("/r/") + 
+        name_length + 
+        strlen(".json") + 
+        1U;
+
+    char *url = malloc(url_size);
+
+    if (url == NULL)
+    {
+        return RA_ERR_OUT_OF_MEMORY;
+    }
+
+    int written = snprintf(
+        url,
+        url_size,
+        "%s/r/%s.json",
+        client->base_url,
+        name
+    );
+
+    if (written < 0 || (size_t)written >= url_size)
+    {
+        free(url);
+        return RA_ERR_INTERNAL;
+    }
+
+    HttpResponse response = {0};
+
+    RaError error = http_get(url, &response);
+
+    free(url);
+
+    if (error != RA_OK)
+    {
+        http_response_destroy(&response);
+        return error;
+    }
+
+    error = post_list_from_json(
+        response.data,
+        post_list
+    );
 
     http_response_destroy(&response);
 

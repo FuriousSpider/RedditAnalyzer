@@ -120,11 +120,105 @@ static void test_get_subreddit(void)
     http_test_server_stop(&server);
 }
 
+static void test_get_posts(void)
+{
+    HttpTestServer server = {0};
+
+    assert(http_test_server_start(&server));
+
+    char base_url[64];
+
+    int written = snprintf(
+        base_url,
+        sizeof(base_url),
+        "http://127.0.0.1:%d",
+        server.port
+    );
+
+    assert(written > 0);
+    assert((size_t)written < sizeof(base_url));
+
+    RedditClientConfig config = {
+        .base_url = base_url
+    };
+
+    RedditClient *client = reddit_client_create(&config);
+
+    assert(client != NULL);
+
+    const char *body =
+        "{"
+        "\"kind\":\"Listing\","
+        "\"data\":{"
+            "\"children\":["
+                "{"
+                    "\"kind\":\"t3\","
+                    "\"data\":{"
+                        "\"id\":\"abc123\","
+                        "\"title\":\"First post\","
+                        "\"author\":\"user_one\","
+                        "\"score\":100,"
+                        "\"num_comments\":10,"
+                        "\"created_utc\":1750000000,"
+                        "\"is_video\":false,"
+                        "\"is_self\":true"
+                    "}"
+                "},"
+                "{"
+                    "\"kind\":\"t3\","
+                    "\"data\":{"
+                        "\"id\":\"def456\","
+                        "\"title\":\"Second post\","
+                        "\"author\":\"user_two\","
+                        "\"score\":250,"
+                        "\"num_comments\":20,"
+                        "\"created_utc\":1750000100,"
+                        "\"is_video\":true,"
+                        "\"is_self\":false"
+                    "}"
+                "}"
+            "]"
+        "}"
+        "}";
+
+    assert(
+        http_test_server_run(
+            &server,
+            200,
+            body
+        )
+    );
+
+    PostList list = {0};
+
+    RaError error = reddit_client_get_posts(
+        client,
+        "programming",
+        &list
+    );
+
+    assert(error == RA_OK);
+    assert(list.count == 2U);
+
+    assert(strcmp(list.items[0]->id, "abc123") == 0);
+    assert(strcmp(list.items[0]->title, "First post") == 0);
+    assert(list.items[0]->score == 100);
+
+    assert(strcmp(list.items[1]->id, "def456") == 0);
+    assert(strcmp(list.items[1]->title, "Second post") == 0);
+    assert(list.items[1]->score == 250);
+
+    post_list_destroy(&list);
+    reddit_client_destroy(client);
+    http_test_server_stop(&server);
+}
+
 int main(void)
 {
     test_create_destroy();
     test_invalid_arguments();
     test_get_subreddit();
+    test_get_posts();
 
     return 0;
 }
