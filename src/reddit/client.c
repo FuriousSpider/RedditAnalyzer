@@ -87,6 +87,132 @@ static RaError build_subreddit_url(
     return RA_OK;
 }
 
+static RaError build_posts_url(
+    const RedditClient *client,
+    const char *name,
+    size_t limit,
+    const char *after,
+    char **url
+)
+{
+    if (client == NULL || name == NULL || url == NULL || limit == 0U)
+    {
+        return RA_ERR_INVALID_ARGUMENT;
+    }
+
+    *url = NULL;
+
+    if (name[0] == '\0')
+    {
+        return RA_ERR_INVALID_ARGUMENT;
+    }
+
+    const char *after_parameter = "";
+
+    if (after != NULL && after[0] != '\0')
+    {
+        after_parameter = "&after=";
+    }
+
+    const size_t base_length = strlen(client->base_url);
+    const size_t name_length = strlen(name);
+    const size_t after_parameter_length = strlen(after_parameter);
+
+    size_t after_length = after_parameter_length;
+
+    if (after != NULL)
+    {
+        const size_t token_length = strlen(after);
+
+        if (token_length > SIZE_MAX - after_length)
+        {
+            return RA_ERR_INTERNAL;
+        }
+
+        after_length += token_length;
+    }
+
+    const size_t prefix_length = strlen("/r/") + strlen(".json?limit=");
+
+    if (base_length > SIZE_MAX - prefix_length)
+    {
+        return RA_ERR_INTERNAL;
+    }
+
+    size_t url_size = base_length + prefix_length;
+
+    if (name_length > SIZE_MAX - url_size)
+    {
+        return RA_ERR_INTERNAL;
+    }
+
+    url_size += name_length;
+
+    if (20U > SIZE_MAX - url_size)
+    {
+        return RA_ERR_INTERNAL;
+    }
+
+    url_size += 20U;
+
+    if (after_length > SIZE_MAX - url_size)
+    {
+        return RA_ERR_INTERNAL;
+    }
+
+    url_size += after_length;
+
+    if (1U > SIZE_MAX - url_size)
+    {
+        return RA_ERR_INTERNAL;
+    }
+
+    url_size += 1U;
+
+    char *result = malloc(url_size);
+
+    if (result == NULL)
+    {
+        return RA_ERR_OUT_OF_MEMORY;
+    }
+
+    int written;
+
+    if (after != NULL && after[0] != '\0')
+    {
+        written = snprintf(
+            result,
+            url_size,
+            "%s/r/%s.json?limit=%zu&after=%s",
+            client->base_url,
+            name,
+            limit,
+            after
+        );
+    }
+    else
+    {
+        written = snprintf(
+            result,
+            url_size,
+            "%s/r/%s.json?limit=%zu",
+            client->base_url,
+            name,
+            limit
+        );
+    }
+
+    if (written < 0 || (size_t)written >= url_size)
+    {
+        free(result);
+        return RA_ERR_INTERNAL;
+    }
+
+    *url = result;
+
+    return RA_OK;
+}
+
 RedditClient *reddit_client_create(const RedditClientConfig *config)
 {
     if (config == NULL || config->base_url == NULL)
@@ -280,102 +406,24 @@ RaError reddit_client_get_posts_page(
         return RA_ERR_INVALID_ARGUMENT;
     }
 
-    size_t base_length = strlen(client->base_url);
-    size_t name_length = strlen(name);
+    char *url = NULL;
 
-    const char *after_parameter = "";
+    RaError error = build_posts_url(
+        client,
+        name,
+        limit,
+        after,
+        &url
+    );
 
-    if (after != NULL && after[0] != '\0')
+    if (error != RA_OK)
     {
-        after_parameter = "&after=";
-    }
-
-    size_t after_length = strlen(after_parameter);
-
-    if (after != NULL)
-    {
-        after_length += strlen(after);
-    }
-
-    const size_t prefix_length = strlen("/r/") + strlen(".json?limit=");
-
-    if (base_length > SIZE_MAX - prefix_length)
-    {
-        return RA_ERR_INTERNAL;
-    }
-
-    size_t url_size = base_length + prefix_length;
-
-    if (name_length > SIZE_MAX - url_size)
-    {
-        return RA_ERR_INTERNAL;
-    }
-
-    url_size += name_length;
-
-    if (20U > SIZE_MAX - url_size)
-    {
-        return RA_ERR_INTERNAL;
-    }
-
-    url_size += 20U;
-
-    if (after_length > SIZE_MAX - url_size)
-    {
-        return RA_ERR_INTERNAL;
-    }
-
-    url_size += after_length;
-
-    if (1U > SIZE_MAX - url_size)
-    {
-        return RA_ERR_INTERNAL;
-    }
-
-    url_size += 1U;
-
-    char *url = malloc(url_size);
-
-    if (url == NULL)
-    {
-        return RA_ERR_OUT_OF_MEMORY;
-    }
-
-    int written;
-
-    if (after != NULL && after[0] != '\0')
-    {
-        written = snprintf(
-            url,
-            url_size,
-            "%s/r/%s.json?limit=%zu&after=%s",
-            client->base_url,
-            name,
-            limit,
-            after
-        );
-    }
-    else
-    {
-        written = snprintf(
-            url,
-            url_size,
-            "%s/r/%s.json?limit=%zu",
-            client->base_url,
-            name,
-            limit
-        );
-    }
-
-    if (written < 0 || (size_t)written >= url_size)
-    {
-        free(url);
-        return RA_ERR_INTERNAL;
+        return error;
     }
 
     HttpResponse response = {0};
 
-    RaError error = http_get(url, &response);
+    error = http_get(url, &response);
 
     free(url);
 
