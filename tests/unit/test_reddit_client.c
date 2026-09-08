@@ -297,6 +297,125 @@ static void test_get_posts_page(void)
     http_test_server_stop(&server);
 }
 
+static void test_get_posts_pagination(void)
+{
+    HttpTestServer server = {0};
+
+    assert(http_test_server_start(&server));
+
+    char base_url[64];
+
+    int written = snprintf(
+        base_url,
+        sizeof(base_url),
+        "http://127.0.0.1:%d",
+        server.port
+    );
+
+    assert(written > 0);
+    assert((size_t)written < sizeof(base_url));
+
+    RedditClientConfig config = {
+        .base_url = base_url
+    };
+
+    RedditClient *client = reddit_client_create(&config);
+
+    assert(client != NULL);
+
+    const char *first_body =
+        "{"
+            "\"kind\":\"Listing\","
+            "\"data\":{"
+                "\"after\":\"t3_next\","
+                "\"children\":["
+                    "{"
+                        "\"kind\":\"t3\","
+                        "\"data\":{"
+                            "\"id\":\"post1\","
+                            "\"title\":\"First post\","
+                            "\"author\":\"user1\","
+                            "\"score\":100,"
+                            "\"num_comments\":10,"
+                            "\"created_utc\":1750000000,"
+                            "\"is_video\":false,"
+                            "\"is_self\":true"
+                        "}"
+                    "},"
+                    "{"
+                        "\"kind\":\"t3\","
+                        "\"data\":{"
+                            "\"id\":\"post2\","
+                            "\"title\":\"Second post\","
+                            "\"author\":\"user2\","
+                            "\"score\":200,"
+                            "\"num_comments\":20,"
+                            "\"created_utc\":1750000001,"
+                            "\"is_video\":false,"
+                            "\"is_self\":true"
+                        "}"
+                    "}"
+                "]"
+            "}"
+        "}";
+
+    const char *second_body =
+        "{"
+            "\"kind\":\"Listing\","
+            "\"data\":{"
+                "\"after\":null,"
+                "\"children\":["
+                    "{"
+                        "\"kind\":\"t3\","
+                        "\"data\":{"
+                            "\"id\":\"post3\","
+                            "\"title\":\"Third post\","
+                            "\"author\":\"user3\","
+                            "\"score\":300,"
+                            "\"num_comments\":30,"
+                            "\"created_utc\":1750000002,"
+                            "\"is_video\":false,"
+                            "\"is_self\":true"
+                        "}"
+                    "}"
+                "]"
+            "}"
+        "}";
+
+    assert(
+        http_test_server_run_sequence(
+            &server,
+            200,
+            first_body,
+            "GET /r/programming.json?limit=3",
+            200,
+            second_body,
+            "GET /r/programming.json?limit=1&after=t3_next"
+        )
+    );
+
+    PostList list = {0};
+
+    RaError error = reddit_client_get_posts(
+        client,
+        "programming",
+        3U,
+        &list
+    );
+
+    assert(error == RA_OK);
+    assert(list.count == 3U);
+
+    assert(strcmp(list.items[0]->id, "post1") == 0);
+    assert(strcmp(list.items[1]->id, "post2") == 0);
+    assert(strcmp(list.items[2]->id, "post3") == 0);
+
+    post_list_destroy(&list);
+    reddit_client_destroy(client);
+    http_test_server_stop(&server);
+
+}
+
 int main(void)
 {
     test_create_destroy();
@@ -304,6 +423,7 @@ int main(void)
     test_get_subreddit();
     test_get_posts();
     test_get_posts_page();
+    test_get_posts_pagination();
 
     return 0;
 }

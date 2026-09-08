@@ -27,6 +27,16 @@ bool http_test_server_run_expect_request(
     const char *expected_request
 );
 
+bool http_test_server_run_sequence(
+    HttpTestServer *server,
+    int first_status_code,
+    const char *first_body,
+    const char *first_expected_request,
+    int second_status_code,
+    const char *second_body,
+    const char *second_expected_request
+);
+
 void http_test_server_stop(HttpTestServer *server);
 
 #endif /* REDDITANALYZER_TEST_HTTP_SERVER_H */

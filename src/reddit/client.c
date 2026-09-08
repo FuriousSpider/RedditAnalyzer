@@ -131,71 +131,91 @@ RaError reddit_client_get_posts(
         return RA_ERR_INVALID_ARGUMENT;
     }
 
-    size_t base_length = strlen(client->base_url);
-    size_t name_length = strlen(name);
-
-    if (name_length == 0U)
+    if (name[0] == '\0')
     {
         return RA_ERR_INVALID_ARGUMENT;
     }
 
-    const size_t suffix_length = strlen("/r//.json?limit=");
-
-    if (base_length > SIZE_MAX - name_length || base_length + name_length > SIZE_MAX - suffix_length - 1U)
-    {
-        return RA_ERR_INTERNAL;
-    }
-
-    const size_t url_size =
-        base_length +
-        strlen("/r/") + 
-        name_length + 
-        strlen(".json?limit=") + 
-        20U + 
-        1U;
-
-    char *url = malloc(url_size);
-
-    if (url == NULL)
-    {
-        return RA_ERR_OUT_OF_MEMORY;
-    }
-
-    int written = snprintf(
-        url,
-        url_size,
-        "%s/r/%s.json?limit=%zu",
-        client->base_url,
-        name,
-        limit
-    );
-
-    if (written < 0 || (size_t)written >= url_size)
-    {
-        free(url);
-        return RA_ERR_INTERNAL;
-    }
-
-    HttpResponse response = {0};
-
-    RaError error = http_get(url, &response);
-
-    free(url);
+    RaError error = post_list_init(post_list);
 
     if (error != RA_OK)
     {
-        http_response_destroy(&response);
         return error;
     }
 
-    error = post_list_from_json(
-        response.data,
-        post_list
-    );
+    char *after = NULL;
 
-    http_response_destroy(&response);
+    while (post_list->count < limit)
+    {
+        size_t remaining = limit - post_list->count;
+        size_t page_limit = remaining;
 
-    return error;
+        if (page_limit > 100U)
+        {
+            page_limit = 100U;
+        }
+
+        PostList page = {0};
+
+        error = reddit_client_get_posts_page(
+            client,
+            name,
+            page_limit,
+            after,
+            &page
+        );
+
+        free(after);
+        after = NULL;
+
+        if (error != RA_OK)
+        {
+            post_list_destroy(&page);
+            post_list_destroy(post_list);
+
+            return error;
+        }
+
+        for (size_t i = 0U; i < page.count; i++)
+        {
+            error = post_list_append(
+                post_list,
+                page.items[i]
+            );
+
+            if (error != RA_OK)
+            {
+                page.items[i] = NULL;
+
+                post_list_destroy(&page);
+                post_list_destroy(post_list);
+
+                return error;
+            }
+
+            page.items[i] = NULL;
+        }
+
+        if (page.after == NULL || page.after[0] == '\0')
+        {
+            post_list_destroy(&page);
+            break;
+        }
+
+        after = ra_strdup(page.after);
+
+        post_list_destroy(&page);
+
+        if (after == NULL)
+        {
+            post_list_destroy(post_list);
+            return RA_ERR_OUT_OF_MEMORY;
+        }
+    }
+
+    free(after);
+
+    return RA_OK;
 }
 
 RaError reddit_client_get_posts_page(
