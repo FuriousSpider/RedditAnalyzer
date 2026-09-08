@@ -18,6 +18,75 @@ struct RedditClient
     char *base_url;
 };
 
+static RaError build_subreddit_url(
+    const RedditClient *client,
+    const char *name,
+    char **url
+)
+{
+    if (client == NULL || name == NULL || url == NULL)
+    {
+        return RA_ERR_INVALID_ARGUMENT;
+    }
+
+    *url = NULL;
+
+    if (name[0] == '\0')
+    {
+        return RA_ERR_INVALID_ARGUMENT;
+    }
+
+    const size_t base_length = strlen(client->base_url);
+    const size_t name_length = strlen(name);
+    const size_t suffix_length = strlen("/r/") + strlen("/about.json");
+
+    if (base_length > SIZE_MAX - suffix_length)
+    {
+        return RA_ERR_INTERNAL;
+    }
+
+    size_t url_size = base_length + suffix_length;
+
+    if (name_length > SIZE_MAX - url_size)
+    {
+        return RA_ERR_INTERNAL;
+    }
+
+    url_size += name_length;
+
+    if (1U > SIZE_MAX - url_size)
+    {
+        return RA_ERR_INTERNAL;
+    }
+
+    url_size += 1U;
+
+    char *result = malloc(url_size);
+
+    if (result == NULL)
+    {
+        return RA_ERR_OUT_OF_MEMORY;
+    }
+
+    int written = snprintf(
+        result,
+        url_size,
+        "%s/r/%s/about.json",
+        client->base_url,
+        name
+    );
+
+    if (written < 0 || (size_t)written >= url_size)
+    {
+        free(result);
+        return RA_ERR_INTERNAL;
+    }
+
+    *url = result;
+
+    return RA_OK;
+}
+
 RedditClient *reddit_client_create(const RedditClientConfig *config)
 {
     if (config == NULL || config->base_url == NULL)
@@ -62,47 +131,22 @@ RaError reddit_client_get_subreddit(RedditClient *client, const char *name, Subr
 
     *subreddit = NULL;
 
-    size_t base_length = strlen(client->base_url);
-    size_t name_length = strlen(name);
+    char *url = NULL;
 
-    if (name_length == 0U)
-    {
-        return RA_ERR_INVALID_ARGUMENT;
-    }
-
-    const size_t suffix_lenght = strlen("/r//about.json");
-
-    if (base_length > SIZE_MAX - name_length || base_length + name_length > SIZE_MAX - suffix_lenght - 1U)
-    {
-        return RA_ERR_INTERNAL;
-    }
-
-    const size_t url_size = base_length + strlen("/r/") + name_length + strlen("/about.json") + 1U;
-
-    char *url = malloc(url_size);
-
-    if (url == NULL)
-    {
-        return RA_ERR_OUT_OF_MEMORY;
-    }
-
-    int written = snprintf(
-        url,
-        url_size,
-        "%s/r/%s/about.json",
-        client->base_url,
-        name
+    RaError error = build_subreddit_url(
+        client,
+        name,
+        &url
     );
 
-    if (written < 0 || (size_t)written >= url_size)
+    if (error != RA_OK)
     {
-        free(url);
-        return RA_ERR_INTERNAL;
+        return error;
     }
 
     HttpResponse response = {0};
 
-    RaError error = http_get(url, &response);
+    error = http_get(url, &response);
 
     free(url);
 
@@ -253,14 +297,42 @@ RaError reddit_client_get_posts_page(
         after_length += strlen(after);
     }
 
-    const size_t url_size = 
-        base_length + 
-        strlen("/r/") + 
-        name_length + 
-        strlen(".json?limit=") + 
-        20U + 
-        after_length + 
-        1U;
+    const size_t prefix_length = strlen("/r/") + strlen(".json?limit=");
+
+    if (base_length > SIZE_MAX - prefix_length)
+    {
+        return RA_ERR_INTERNAL;
+    }
+
+    size_t url_size = base_length + prefix_length;
+
+    if (name_length > SIZE_MAX - url_size)
+    {
+        return RA_ERR_INTERNAL;
+    }
+
+    url_size += name_length;
+
+    if (20U > SIZE_MAX - url_size)
+    {
+        return RA_ERR_INTERNAL;
+    }
+
+    url_size += 20U;
+
+    if (after_length > SIZE_MAX - url_size)
+    {
+        return RA_ERR_INTERNAL;
+    }
+
+    url_size += after_length;
+
+    if (1U > SIZE_MAX - url_size)
+    {
+        return RA_ERR_INTERNAL;
+    }
+
+    url_size += 1U;
 
     char *url = malloc(url_size);
 
