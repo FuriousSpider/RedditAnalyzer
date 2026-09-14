@@ -52,7 +52,7 @@ static void test_invalid_json(void)
     Subreddit *subreddit = NULL;
     RaError error = subreddit_from_json("{invalid json}", &subreddit);
 
-    assert(error = RA_ERR_JSON);
+    assert(error == RA_ERR_JSON);
     assert(subreddit == NULL);
 }
 

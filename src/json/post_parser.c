@@ -1,5 +1,3 @@
-#define _POSIZ_C_SOURCE 200809L
-
 #include "redditanalyzer/json/post_parser.h"
 #include "redditanalyzer/utils/string.h"
 
@@ -9,19 +7,79 @@
 #include <string.h>
 #include <time.h>
 
-static char *duplicate_json_string(
-    const cJSON *object,
-    const char *name
+static RaError parse_post_string(
+    const cJSON *data,
+    const char *field_name,
+    char **destination
 )
 {
-    const cJSON *item = cJSON_GetObjectItemCaseSensitive(object, name);
+    const cJSON *item = cJSON_GetObjectItemCaseSensitive(data, field_name);
 
     if (!cJSON_IsString(item) || item->valuestring == NULL)
     {
-        return NULL;
+        return RA_ERR_JSON;
     }
 
-    return ra_strdup(item->valuestring);
+    *destination = ra_strdup(item->valuestring);
+
+    if (*destination == NULL)
+    {
+        return RA_ERR_OUT_OF_MEMORY;
+    }
+
+    return RA_OK;
+}
+
+static RaError parse_post_number(
+    const cJSON *data,
+    const char *field_name,
+    int64_t *destination
+)
+{
+    const cJSON *item = cJSON_GetObjectItemCaseSensitive(data, field_name);
+
+    if (!cJSON_IsNumber(item))
+    {
+        return RA_ERR_JSON;
+    }
+
+    *destination = (int64_t)item->valuedouble;
+
+    return RA_OK;
+}
+
+static void parse_post_optional_numbers(const cJSON *data, Post *post)
+{
+    const cJSON *comments = cJSON_GetObjectItemCaseSensitive(data, "num_comments");
+
+    if (cJSON_IsNumber(comments) && comments->valuedouble >= 0.0)
+    {
+        post->comments = (uint64_t)comments->valuedouble;
+    }
+
+    const cJSON *created_utc = cJSON_GetObjectItemCaseSensitive(data, "created_utc");
+
+    if (cJSON_IsNumber(created_utc) && created_utc->valuedouble >= 0.0)
+    {
+        post->created_at = (time_t)created_utc->valuedouble;
+    }
+}
+
+static void parse_post_flags(const cJSON *data, Post *post)
+{
+    const cJSON *is_video = cJSON_GetObjectItemCaseSensitive(data, "is_video");
+
+    if (cJSON_IsBool(is_video))
+    {
+        post->is_video = cJSON_IsTrue(is_video);
+    }
+
+    const cJSON *is_self = cJSON_GetObjectItemCaseSensitive(data, "is_self");
+
+    if (cJSON_IsBool(is_self))
+    {
+        post->is_self = cJSON_IsTrue(is_self);
+    }
 }
 
 RaError post_from_json(
@@ -59,67 +117,45 @@ RaError post_from_json(
         return RA_ERR_OUT_OF_MEMORY;
     }
 
-    result->id = duplicate_json_string(data, "id");
+    RaError error = parse_post_string(data, "id", &result->id);
 
-    if (result->id == NULL)
+    if (error != RA_OK)
     {
         post_destroy(result);
         cJSON_Delete(root);
-        return RA_ERR_JSON;
+        return error;
     }
 
-    result->title = duplicate_json_string(data, "title");
+    error = parse_post_string(data, "title", &result->title);
 
-    if (result->title == NULL)
+    if (error != RA_OK)
     {
         post_destroy(result);
         cJSON_Delete(root);
-        return RA_ERR_JSON;
+        return error;
     }
 
-    result->author = duplicate_json_string(data, "author");
+    error = parse_post_string(data, "author", &result->author);
 
-    if (result->author == NULL)
+    if (error != RA_OK)
     {
         post_destroy(result);
         cJSON_Delete(root);
-        return RA_ERR_JSON;
+        return error;
     }
 
-    const cJSON *score = cJSON_GetObjectItemCaseSensitive(data, "score");
+    int64_t score = 0;
 
-    if (cJSON_IsNumber(score))
+    error = parse_post_number(data, "score", &score);
+
+    if (error == RA_OK)
     {
-        result->score = (int64_t)score->valuedouble;
+        result->score = score;
     }
 
-    const cJSON * comments = cJSON_GetObjectItemCaseSensitive(data, "num_comments");
+    parse_post_optional_numbers(data, result);
 
-    if (cJSON_IsNumber(comments) && comments->valuedouble >= 0.0)
-    {
-        result->comments = (uint64_t)comments->valuedouble;
-    }
-
-    const cJSON *created_utc = cJSON_GetObjectItemCaseSensitive(data, "created_utc");
-
-    if (cJSON_IsNumber(created_utc) && created_utc->valuedouble >= 0.0)
-    {
-        result->created_at = (time_t)created_utc->valuedouble;
-    }
-
-    const cJSON *is_video = cJSON_GetObjectItemCaseSensitive(data, "is_video");
-
-    if (cJSON_IsBool(is_video))
-    {
-        result->is_video = cJSON_IsTrue(is_video);
-    }
-
-    const cJSON *is_self = cJSON_GetObjectItemCaseSensitive(data, "is_self");
-
-    if (cJSON_IsBool(is_self))
-    {
-        result->is_self = cJSON_IsTrue(is_self);
-    }
+    parse_post_flags(data, result);
 
     *post = result;
 
