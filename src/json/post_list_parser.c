@@ -7,6 +7,66 @@
 #include <stdlib.h>
 #include <string.h>
 
+static RaError parse_post_child(
+    const cJSON *child,
+    PostList *post_list
+)
+{
+    const cJSON *post_data = cJSON_GetObjectItemCaseSensitive(child, "data");
+
+    if (!cJSON_IsObject(post_data))
+    {
+        return RA_ERR_JSON;
+    }
+
+    cJSON *post_root = cJSON_CreateObject();
+
+    if (post_root == NULL)
+    {
+        return RA_ERR_OUT_OF_MEMORY;
+    }
+
+    cJSON *post_data_copy = cJSON_Duplicate(post_data, 1);
+
+    if (post_data_copy == NULL || !cJSON_AddItemToObject(post_root, "data", post_data_copy))
+    {
+        cJSON_Delete(post_data_copy);
+        cJSON_Delete(post_root);
+
+        return RA_ERR_OUT_OF_MEMORY;
+    }
+
+    char *post_json = cJSON_PrintUnformatted(post_root);
+
+    cJSON_Delete(post_root);
+
+    if (post_json == NULL)
+    {
+        return RA_ERR_OUT_OF_MEMORY;
+    }
+
+    Post *post = NULL;
+
+    RaError error = post_from_json(post_json, &post);
+
+    free(post_json);
+
+    if (error != RA_OK)
+    {
+        return error;
+    }
+
+    error = post_list_append(post_list, post);
+
+    if (error != RA_OK)
+    {
+        post_destroy(post);
+        return error;
+    }
+
+    return RA_OK;
+}
+
 RaError post_list_from_json(
     const char *json,
     PostList *post_list
@@ -54,66 +114,13 @@ RaError post_list_from_json(
 
     cJSON_ArrayForEach(child, children)
     {
-        const cJSON *post_data = cJSON_GetObjectItemCaseSensitive(child, "data");
-
-        if (!cJSON_IsObject(post_data))
-        {
-            cJSON_Delete(root);
-            post_list_destroy(post_list);
-            return RA_ERR_JSON;
-        }
-
-        cJSON *post_root = cJSON_CreateObject();
-
-        if (post_root == NULL)
-        {
-            cJSON_Delete(root);
-            post_list_destroy(post_list);
-            return RA_ERR_OUT_OF_MEMORY;
-        }
-
-        cJSON *post_data_copy = cJSON_Duplicate(post_data, 1);
-
-        if (post_data_copy == NULL || !cJSON_AddItemToObject(post_root, "data", post_data_copy))
-        {
-            cJSON_Delete(post_data_copy);
-            cJSON_Delete(post_root);
-            cJSON_Delete(root);
-            post_list_destroy(post_list);
-            return RA_ERR_OUT_OF_MEMORY;
-        }
-
-        char *post_json = cJSON_PrintUnformatted(post_root);
-
-        cJSON_Delete(post_root);
-
-        if (post_json == NULL)
-        {
-            cJSON_Delete(root);
-            post_list_destroy(post_list);
-            return RA_ERR_OUT_OF_MEMORY;
-        }
-
-        Post *post = NULL;
-
-        error = post_from_json(post_json, &post);
-
-        free(post_json);
+        error = parse_post_child(child, post_list);
 
         if (error != RA_OK)
         {
             cJSON_Delete(root);
             post_list_destroy(post_list);
-            return error;
-        }
 
-        error = post_list_append(post_list, post);
-
-        if (error != RA_OK)
-        {
-            post_destroy(post);
-            cJSON_Delete(root);
-            post_list_destroy(post_list);
             return error;
         }
     }
